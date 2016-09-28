@@ -94,8 +94,6 @@ namespace BrianWork
 			/// <param name="writer">the binary writer to write with</param>
 			private static void WriteValue(object input, BinaryWriter writer)
 			{
-
-
 				Type inputType = input.GetType();
 
 				if (inputType.IsArray)
