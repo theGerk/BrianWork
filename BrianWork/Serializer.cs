@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -149,9 +150,14 @@ namespace BrianWork
 		/// </summary>
 		static class DeserializeMethods
 		{
-			public static dynamic getValue(Type type, BinaryReader reader)
+			public static dynamic Deserialize(BinaryReader reader)
 			{
-				throw new NotImplementedException();
+				return getValue(getType(reader), reader);
+			}
+
+
+			private static dynamic getValue(Type type, BinaryReader reader)
+			{
 				if (type == null)
 				{
 					return null;
@@ -161,6 +167,23 @@ namespace BrianWork
 					if (type.IsArray)
 					{
 						//do array stuff
+						int length = reader.ReadInt32();
+
+						if (length < 0)
+						{
+							return null;
+						}
+						else
+						{
+							dynamic[] output = new dynamic[length];
+
+							for (int i = 0; i < length; i++)
+							{
+								output[i] = getValue(type.GetElementType(), reader);
+							}
+
+							return output;
+						}
 					}
 					else
 					{
@@ -170,7 +193,16 @@ namespace BrianWork
 						}
 						catch (NotImplementedException)
 						{
+							//do object stuff
+							dynamic output = new ExpandoObject();
+							int properties = reader.ReadInt32();
+							for(int i = 0; i < properties; i++)
+							{
+								string name = reader.ReadString();
 
+								output[name] = Deserialize(reader);
+							}
+							return output;
 						}
 					}
 				}
@@ -182,7 +214,7 @@ namespace BrianWork
 			/// </summary>
 			/// <param name="reader">the binary reader</param>
 			/// <returns>a type based off the type code that is read</returns>
-			public static Type getType(BinaryReader reader)
+			private static Type getType(BinaryReader reader)
 			{
 				switch (BinaryReaderExtension.ReadType<TypeCode>(reader))
 				{
