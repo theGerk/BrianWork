@@ -151,6 +151,7 @@ namespace BrianWork
 		{
 			public static dynamic getValue(Type type, BinaryReader reader)
 			{
+				throw new NotImplementedException();
 				if (type == null)
 				{
 					return null;
@@ -163,52 +164,13 @@ namespace BrianWork
 					}
 					else
 					{
-						switch (Type.GetTypeCode(type))
+						try
 						{
-							case System.TypeCode.Boolean:
-								return reader.ReadBoolean();
-								break;
-							case System.TypeCode.Char:
-								return reader.ReadChar();
-								break;
-							case System.TypeCode.SByte:
-								return reader.ReadSByte();
-								break;
-							case System.TypeCode.Byte:
-								return reader.ReadByte();
-								break;
-							case System.TypeCode.Int16:
-								return reader.ReadInt16();
-								break;
-							case System.TypeCode.UInt16:
-								return reader.ReadUInt16();
-								break;
-							case System.TypeCode.Int32:
-								return reader.ReadInt32();
-								break;
-							case System.TypeCode.UInt32:
-								return reader.ReadUInt32();
-								break;
-							case System.TypeCode.Int64:
-								return reader.ReadInt64();
-								break;
-							case System.TypeCode.UInt64:
-								return reader.ReadUInt64();
-								break;
-							case System.TypeCode.Single:
-								return reader.ReadSingle();
-								break;
-							case System.TypeCode.Double:
-								return reader.ReadDouble();
-								break;
-							case System.TypeCode.Decimal:
-								return reader.ReadDecimal();
-								break;
-							case System.TypeCode.String:
-								return reader.ReadString();
-								break;
-							default:	//treat as object
-								break;
+							return BinaryReaderExtension.ReadType(type, reader);
+						}
+						catch (NotImplementedException)
+						{
+
 						}
 					}
 				}
