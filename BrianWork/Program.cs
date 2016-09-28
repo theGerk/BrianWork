@@ -12,53 +12,27 @@ namespace BrianWork
 	{
 		public static void Main(string[] args)
 		{
-			using (BinaryWriter bw = new BinaryWriter(Console.OpenStandardOutput()))
+			byte[] bytes = new byte[10];
+			using (MemoryStream stream = new MemoryStream(bytes))
 			{
-				bw.Write("Hello");
-			}
-		
-
-			myobj obj = new myobj()
-			{
-				mystrs = args,
-				myints = new int[] { 1, 2, 3, 4, -5, 4, 0 },
-				inintint = new int[][][]
+				using (BinaryWriter bw = new BinaryWriter(stream))
 				{
-					new int[][]
-					{
-						new int[] {0,1,2 },
-						new int[] {3,4,5 },
-						new int[] {6,7,8 }
-					},
-					new int[][]
-					{
-						new int[] {9,10,11 },
-						new int[] {12,13,14 },
-						new int[] { }
-					},
-					new int[][]
-					{
-						null,
-						new int[] {-49, 64, 70 },
-						null
-					}
+					bw.Write((sbyte)Serializer.TypeCode.Null);
 				}
-			};
-			byte[] bytes = Serailizer.SerializeMethods.Serailize(obj);
-			Console.WriteLine(bytes.Length);
-			foreach(var b in bytes)
-			{
-				Console.WriteLine(b);
 			}
-			Console.WriteLine(bytes.Length);
-			Console.WriteLine(Serailizer.SerializeMethods.Serailize(obj, new MemoryStream()));
-		}
-	}
+			using (MemoryStream stream = new MemoryStream(bytes))
+			{
+				using (BinaryReader br = new BinaryReader(stream))
+				{
+					Console.WriteLine(Serializer.BinaryReaderExtension.ReadType<Serializer.TypeCode>(br));
+				}
+			}
 
-	class myobj
-	{
-		public string[] mystrs;
-		public int[] myints { get; set; }
-		public int[][][] inintint;
+
+			foreach(var a in Array.CreateInstance(null, 10))
+			{
+				Console.WriteLine(a);
+			}
+		}
 	}
 }
