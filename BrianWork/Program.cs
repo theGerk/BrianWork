@@ -12,6 +12,12 @@ namespace BrianWork
 	{
 		public static void Main(string[] args)
 		{
+			using (BinaryWriter bw = new BinaryWriter(Console.OpenStandardOutput()))
+			{
+				bw.Write("Hello");
+			}
+		
+
 			myobj obj = new myobj()
 			{
 				mystrs = args,
@@ -44,6 +50,8 @@ namespace BrianWork
 			{
 				Console.WriteLine(b);
 			}
+			Console.WriteLine(bytes.Length);
+			Console.WriteLine(Serailizer.SerializeMethods.Serailize(obj, new MemoryStream()));
 		}
 	}
 
