@@ -150,6 +150,22 @@ namespace BrianWork
 		/// </summary>
 		static class DeserializeMethods
 		{
+			public static dynamic Deserialize(byte[] serializedObject)
+			{
+				using (Stream readStream = new MemoryStream(serializedObject, false))
+				{
+					return Deserialize(readStream);
+				}
+			}
+
+			public static dynamic Deserialize(Stream objectStream)
+			{
+				using (BinaryReader reader = new BinaryReader(objectStream))
+				{
+					return Deserialize(reader);
+				}
+			}
+
 			public static dynamic Deserialize(BinaryReader reader)
 			{
 				return getValue(getType(reader), reader);
@@ -297,13 +313,11 @@ namespace BrianWork
 			/// </summary>
 			/// <param name="input">object to be Serialized</param>
 			/// <param name="outputStream">stream to be written to</param>
-			/// <returns>the number of bytes written</returns>
-			public static int Serialize(object input, Stream outputStream)
+			public static void Serialize(object input, Stream outputStream)
 			{
-				
 				using (BinaryWriter writer = new BinaryWriter(outputStream))
 				{
-					return Serialize(input, writer);
+					Serialize(input, writer);
 				}
 			}
 
@@ -312,24 +326,21 @@ namespace BrianWork
 			/// </summary>
 			/// <param name="input">The object being Serialized</param>
 			/// <param name="writer">The BinaryWriter object</param>
-			/// <returns>the number of bytes written</returns>
-			public static int Serialize(object input, BinaryWriter writer)
+			public static void Serialize(object input, BinaryWriter writer)
 			{
-				int bytesWritten = 0;
 				//check if it's null
 				if (input == null)
 				{
-					bytesWritten += WriteNull(writer);
+					WriteNull(writer);
 				}
 
 				//write if it isn't null;
 				else
 				{
-					bytesWritten += WriteType(input.GetType(), writer);
+					WriteType(input.GetType(), writer);
 
-					bytesWritten += WriteValue(input, writer);
+					WriteValue(input, writer);
 				}
-				return bytesWritten;
 			}
 
 
@@ -338,12 +349,8 @@ namespace BrianWork
 			/// </summary>
 			/// <param name="input">the object being serialized</param>
 			/// <param name="writer">the binary writer to write with</param>
-			/// <returns></returns>
-			private static int WriteValue(object input, BinaryWriter writer)
+			private static void WriteValue(object input, BinaryWriter writer)
 			{
-				int bytesWritten = 0;
-
-
 				Type inputType = input.GetType();
 
 				if (inputType.IsArray)
@@ -354,19 +361,18 @@ namespace BrianWork
 
 					//write length of array
 					writer.Write(arrayLength);
-					bytesWritten += sizeof(int);
-
+					
 					//write value of each element
 					foreach (var element in (IEnumerable)input)
 					{
 						//check if it's a null in the array
 						if(element == null)
 						{
-							bytesWritten += WriteNull(writer);
+							WriteNull(writer);
 						}
 						else
 						{
-							bytesWritten += WriteValue(element, writer);
+							WriteValue(element, writer);
 						}
 					}
 				}
@@ -376,96 +382,71 @@ namespace BrianWork
 					{
 						case System.TypeCode.Boolean:
 							writer.Write((bool)input);
-							bytesWritten += sizeof(bool);
 							break;
 						case System.TypeCode.Char:
 							writer.Write((char)input);
-							bytesWritten += sizeof(char);
 							break;
 						case System.TypeCode.SByte:
 							writer.Write((sbyte)input);
-							bytesWritten += sizeof(sbyte);
 							break;
 						case System.TypeCode.Byte:
 							writer.Write((byte)input);
-							bytesWritten += sizeof(byte);
 							break;
 						case System.TypeCode.Int16:
 							writer.Write((short)input);
-							bytesWritten += sizeof(short);
 							break;
 						case System.TypeCode.UInt16:
 							writer.Write((ushort)input);
-							bytesWritten += sizeof(ushort);
 							break;
 						case System.TypeCode.Int32:
 							writer.Write((int)input);
-							bytesWritten += sizeof(int);
 							break;
 						case System.TypeCode.UInt32:
 							writer.Write((uint)input);
-							bytesWritten += sizeof(uint);
 							break;
 						case System.TypeCode.Int64:
 							writer.Write((long)input);
-							bytesWritten += sizeof(long);
 							break;
 						case System.TypeCode.UInt64:
 							writer.Write((ulong)input);
-							bytesWritten += sizeof(ulong);
 							break;
 						case System.TypeCode.Single:
 							writer.Write((float)input);
-							bytesWritten += sizeof(float);
 							break;
 						case System.TypeCode.Double:
 							writer.Write((double)input);
-							bytesWritten += sizeof(double);
 							break;
 						case System.TypeCode.Decimal:
 							writer.Write((decimal)input);
-							bytesWritten += sizeof(decimal);
 							break;
 						case System.TypeCode.String:
-							//unbox
-							string stringVersionOfInput = (string)input;
-
-							//write length of string
-							int length = stringVersionOfInput.Length;
-							writer.Write(length);
-							bytesWritten += sizeof(int);
-
-							//write string's values
-							writer.Write(stringVersionOfInput.ToCharArray());
-							bytesWritten += length;
+							writer.Write((string)input);
 							break;
 						default: // object
 
 							//write number of fields + properties
 							writer.Write(inputType.GetFields().Length + inputType.GetProperties().Length);
-							bytesWritten += sizeof(int);
 
 							foreach(var feild in inputType.GetFields())
 							{
 								//write name
-								bytesWritten += WriteValue(feild.Name, writer);
+								WriteValue(feild.Name, writer);
 
 								//write value
-								bytesWritten += Serialize(feild.GetValue(input), writer);
+								Serialize(feild.GetValue(input), writer);
 							}
 
 							foreach(var property in inputType.GetProperties())
 							{
 								//write name
-								bytesWritten += WriteValue(property.Name, writer);
+								WriteValue(property.Name, writer);
 
 								//write value
-								bytesWritten += Serialize(property.GetValue(input), writer);
+								Serialize(property.GetValue(input), writer);
 							}
 							break;
 					}
 				}
-				return bytesWritten;
 			}
 
 
@@ -474,11 +455,9 @@ namespace BrianWork
 			/// Writes code saying there is a null and returns the size of the code in bytes.
 			/// </summary>
 			/// <param name="myBinaryWriter">Binary Writer to the stream</param>
-			/// <returns>1</returns>
-			private static int WriteNull(BinaryWriter myBinaryWriter)
+			private static void WriteNull(BinaryWriter myBinaryWriter)
 			{
 				myBinaryWriter.Write((TypeCodeEnumType)TypeCode.Null);
-				return sizeof(TypeCodeEnumType);
 			}
 
 
@@ -487,15 +466,13 @@ namespace BrianWork
 			/// </summary>
 			/// <param name="type">The type to be serialized</param>
 			/// <param name="writer">the Writer to the stream</param>
-			/// <returns>bytes written when writing type</returns>
-			private static int WriteType(Type type, BinaryWriter writer)
+			private static void WriteType(Type type, BinaryWriter writer)
 			{
-				int bytesWritten = sizeof(TypeCodeEnumType);
 				if (type.IsArray)
 				{
 					writer.Write((TypeCodeEnumType)TypeCode.Array);
 					//could maybe be turned into loop in later version
-					bytesWritten += WriteType(type.GetElementType(), writer);
+					WriteType(type.GetElementType(), writer);
 				}
 				else
 				{
@@ -548,9 +525,6 @@ namespace BrianWork
 							break;
 					}
 				}
-				
-
-				return bytesWritten;
 			}
 		}
 	}
