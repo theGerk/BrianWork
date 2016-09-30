@@ -209,16 +209,26 @@ namespace BrianWork
 						}
 						catch (NotImplementedException)
 						{
-							//do object stuff
-							dynamic output = new ExpandoObject();
-							int properties = reader.ReadInt32();
-							for(int i = 0; i < properties; i++)
-							{
-								string name = reader.ReadString();
 
-								output[name] = Deserialize(reader);
+							//do object stuff
+							var output = new ExpandoObject() as IDictionary<string, object>;
+							int properties = reader.ReadInt32();
+
+							if (properties < 0)	//checks for nulls
+							{
+								return null;
 							}
-							return output;
+							else
+							{
+								for (int i = 0; i < properties; i++)
+								{
+									string name = reader.ReadString();
+
+									output.Add(name, Deserialize(reader));
+								}
+
+								return output;
+							}
 						}
 					}
 				}
@@ -331,7 +341,7 @@ namespace BrianWork
 				//check if it's null
 				if (input == null)
 				{
-					WriteNull(writer);
+					writer.Write((TypeCodeEnumType)TypeCode.Null);
 				}
 
 				//write if it isn't null;
@@ -355,24 +365,32 @@ namespace BrianWork
 
 				if (inputType.IsArray)
 				{
-					//ignoring multi-dimensional array, simply hope everything is a flat array or array of arrays.
-					//will come back and fix later
-					int arrayLength = (int)inputType.GetProperty("Length").GetValue(input);
-
-					//write length of array
-					writer.Write(arrayLength);
-					
-					//write value of each element
-					foreach (var element in (IEnumerable)input)
+					//check if the array is null
+					if (input == null)
 					{
-						//check if it's a null in the array
-						if(element == null)
+						WriteNull(writer);
+					}
+					else
+					{
+						//ignoring multi-dimensional array, simply hope everything is a flat array or array of arrays.
+						//will come back and fix later
+						int arrayLength = (int)inputType.GetProperty("Length").GetValue(input);
+
+						//write length of array
+						writer.Write(arrayLength);
+
+						//write value of each element
+						foreach (var element in (IEnumerable)input)
 						{
-							WriteNull(writer);
-						}
-						else
-						{
-							WriteValue(element, writer);
+							//check if it's a null in the array
+							if (element == null)
+							{
+								WriteNull(writer);
+							}
+							else
+							{
+								WriteValue(element, writer);
+							}
 						}
 					}
 				}
@@ -446,18 +464,18 @@ namespace BrianWork
 							}
 							break;
 					}
-				}
+				 }
 			}
 
 
 
 			/// <summary>
-			/// Writes code saying there is a null and returns the size of the code in bytes.
+			/// Writes code saying there is a null
 			/// </summary>
 			/// <param name="myBinaryWriter">Binary Writer to the stream</param>
 			private static void WriteNull(BinaryWriter myBinaryWriter)
 			{
-				myBinaryWriter.Write((TypeCodeEnumType)TypeCode.Null);
+				myBinaryWriter.Write((int)TypeCode.Null);
 			}
 
 
