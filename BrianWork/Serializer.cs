@@ -15,7 +15,14 @@ namespace BrianWork
 	/// </summary>
 	namespace Serializer
 	{
-		static class BinaryReaderExtension
+        /// <summary>
+        /// Indicates that a class, or property should not be serialized
+        /// </summary>
+        public class DoNotSerialize : Attribute
+        {
+
+        }
+        static class BinaryReaderExtension
 		{
 			/// <summary>
 			/// reads as many primitives or strings as are asked for in count from the binary reader and then returns them in an array.
@@ -74,10 +81,8 @@ namespace BrianWork
 				{
 					case System.TypeCode.Boolean:
 						return binaryReader.ReadBoolean();
-						break;
 					case System.TypeCode.Char:
 						return binaryReader.ReadChar();
-						break;
 					case System.TypeCode.SByte:
 						return binaryReader.ReadSByte();
 						break;
@@ -115,8 +120,7 @@ namespace BrianWork
 						return binaryReader.ReadString();
 						break;
 					default:
-						throw new NotImplementedException();
-						break;
+                        return null;
 				}
 			}
 		}
@@ -203,33 +207,35 @@ namespace BrianWork
 					}
 					else
 					{
-						try
-						{
-							return BinaryReaderExtension.ReadType(type, reader);
-						}
-						catch (NotImplementedException)
-						{
+                      
+                        var obj = BinaryReaderExtension.ReadType(type, reader);
+                        if (obj != null)
+                        {
+                            return obj;
+                        }
+                        else
+                        {
+                            //do object stuff
+                            var output = new ExpandoObject() as IDictionary<string, object>;
+                            int properties = reader.ReadInt32();
 
-							//do object stuff
-							var output = new ExpandoObject() as IDictionary<string, object>;
-							int properties = reader.ReadInt32();
+                            if (properties < 0) //checks for nulls
+                            {
+                                return null;
+                            }
+                            else
+                            {
+                                for (int i = 0; i < properties; i++)
+                                {
+                                    string name = reader.ReadString();
 
-							if (properties < 0)	//checks for nulls
-							{
-								return null;
-							}
-							else
-							{
-								for (int i = 0; i < properties; i++)
-								{
-									string name = reader.ReadString();
+                                    output.Add(name, Deserialize(reader));
+                                }
 
-									output.Add(name, Deserialize(reader));
-								}
-
-								return output;
-							}
-						}
+                                return output;
+                            }
+                        }
+                        
 					}
 				}
 			}
@@ -372,15 +378,16 @@ namespace BrianWork
 					}
 					else
 					{
-						//ignoring multi-dimensional array, simply hope everything is a flat array or array of arrays.
-						//will come back and fix later
-						int arrayLength = (int)inputType.GetProperty("Length").GetValue(input);
+                        //ignoring multi-dimensional array, simply hope everything is a flat array or array of arrays.
+                        //will come back and fix later
+                        Array inputArray = input as Array;
+						int arrayLength = inputArray.Length;
 
 						//write length of array
 						writer.Write(arrayLength);
 
 						//write value of each element
-						foreach (var element in (IEnumerable)input)
+						foreach (var element in input as IEnumerable)
 						{
 							//check if it's a null in the array
 							if (element == null)
